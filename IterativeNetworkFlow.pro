@@ -13,8 +13,12 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        graphview.cpp
+        graphview.cpp \
+    jobdeclarationwindow.cpp
 
-HEADERS  += graphview.h
+HEADERS  += graphview.h \
+    Structs.h \
+    jobdeclarationwindow.h
 
-FORMS    += graphview.ui
+FORMS    += graphview.ui \
+    jobdeclarationwindow.ui
