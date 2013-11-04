@@ -27,6 +27,8 @@ private slots:
     void on_buttonBox_rejected();
     void editTask(QString* taskLiteral);
 
+    void on_periodSB_valueChanged(double arg1);
+
 private:
     Ui::TaskDeclarationWindow *ui;
     bool edit;

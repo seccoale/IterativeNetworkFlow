@@ -64,14 +64,14 @@
             <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
-               <string>Jobs</string>
+               <string>Tasks</string>
               </property>
              </widget>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_4">
               <item>
-               <widget class="QListWidget" name="listJob"/>
+               <widget class="QListWidget" name="listTask"/>
               </item>
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -94,7 +94,7 @@
                    <bool>false</bool>
                   </property>
                   <property name="text">
-                   <string>Remove Job</string>
+                   <string>Remove Task</string>
                   </property>
                  </widget>
                 </item>
@@ -112,12 +112,12 @@
                  </spacer>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="editJobBtn">
+                 <widget class="QPushButton" name="editTaskBtn">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
                   <property name="text">
-                   <string>Edit Job</string>
+                   <string>Edit Task</string>
                   </property>
                  </widget>
                 </item>
@@ -135,9 +135,9 @@
                  </spacer>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="add_job_button">
+                 <widget class="QPushButton" name="add_task_button">
                   <property name="text">
-                   <string>Add new Job</string>
+                   <string>Add new Task</string>
                   </property>
                  </widget>
                 </item>

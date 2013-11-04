@@ -7,7 +7,7 @@
 #include <QStack>
 #include <QFrame>
 #include <QGraphicsScene>
-#include "jobdeclarationwindow.h"
+#include "taskdeclarationwindow.h"
 #include "Structs.h"
 #include <QListWidgetItem>
 
@@ -24,22 +24,27 @@ public:
     explicit GraphView(QWidget *parent = 0);
     ~GraphView();
 private slots:
-    void on_add_job_button_clicked();
-    void job_received(Job* job);
-    void job_discarded();
+    void on_add_task_button_clicked();
+    void task_received(Task* task);
+    void task_discarded();
+    void task_edited(Task* newTask, int rowOldTask);
+    void on_listTask_itemClicked(QListWidgetItem *item);
 
-    void on_listJob_itemClicked(QListWidgetItem *item);
-
-    void on_editJobBtn_clicked();
+    void on_editTaskBtn_clicked();
 
     void on_removeBtn_clicked();
 
+
+    void on_listTask_itemDoubleClicked(QListWidgetItem *item);
+
 private:
-    int jobs_inserted;
+    int tasks_inserted;
     Ui::GraphView *ui;
     QGraphicsScene* currentScene;
     QGraphicsPixmapItem* currentPixmap;
 };
 
 #endif // GRAPHVIEW_H
+
+
 

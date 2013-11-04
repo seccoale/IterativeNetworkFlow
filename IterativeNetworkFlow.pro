@@ -14,11 +14,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         graphview.cpp \
-    jobdeclarationwindow.cpp
+    taskdeclarationwindow.cpp \
+    infalgoithms.cpp
 
 HEADERS  += graphview.h \
     Structs.h \
-    jobdeclarationwindow.h
+    taskdeclarationwindow.h \
+    infalgoithms.h
 
 FORMS    += graphview.ui \
-    jobdeclarationwindow.ui
+    taskdeclarationwindow.ui

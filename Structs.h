@@ -12,35 +12,48 @@
 using namespace std;
 
 namespace inf{
-struct Job{
+struct Task{
     string name;
-    double release;
-    double deadline;
+    double period;
+    double deadline=0;
     double execution_time;
-    Job(){
+    Task(){
     }
-    Job(string NAME, double RELEASE, double DEADLINE, double EX_TIME){
+    Task(string NAME, double PERIOD, double DEADLINE, double EX_TIME){
         this->name=NAME;
+        this->period=PERIOD;
         this->execution_time=EX_TIME;
         this->deadline=DEADLINE;
-        this->release=RELEASE;
     }
     QString* toString(){
         QString* toReturn=new QString(this->name.c_str());
-        toReturn->append(" ("+QString::number(this->release)+", "+QString::number(this->execution_time)+", "+QString::number(this->deadline)+");");
+        toReturn->append(" ("+QString::number(this->period)+", "+QString::number(this->execution_time)+", "+QString::number(this->deadline)+");");
         return toReturn;
     }
-    static Job* compile(QString literal){
-        Job* job=new Job();
+    static Task* compile(QString literal){
+        Task* job=new Task();
         int endName=literal.indexOf('(')-1;
         job->name=literal.mid(0,endName).toUtf8().constData();
-        int endR=literal.indexOf(',', endName+2)-1;
-        job->release=literal.mid(endName+2, endR-endName-1).toDouble();
-        int endEx=literal.indexOf(',',endR+2);
-        job->execution_time=literal.mid(endR+3,endEx-endR-3).toDouble();
+        int endP=literal.indexOf(',', endName+2)-1;
+        job->period=literal.mid(endName+2, endP-endName-1).toDouble();
+        int endEx=literal.indexOf(',',endP+2);
+        job->execution_time=literal.mid(endP+3,endEx-endP-3).toDouble();
         int endD=literal.indexOf(')')-1;
         job->deadline=literal.mid(endEx+2, endD-endEx-1).toDouble();
         return job;
+    }
+};
+
+struct TaskSet{
+    vector<Task*> tasks;
+    void addTask(Task* task){
+        this->tasks.push_back(task);
+    }
+    int size(){
+        return this->tasks.size();
+    }
+    Task* at(int i){
+        return this->tasks.at(i);
     }
 };
 
@@ -69,12 +82,17 @@ struct EdgeLabel{
     }
 };
 struct Vertex{
+    QString* name;
     int index;
     vector<Vertex*> toVertexes;
     vector<Vertex*> fromVertexes;
     VertexLabel* tmpLabel;
     Vertex(int index){
         this->index=index;
+    }
+    Vertex(int index, QString* name){
+        this->index=index;
+        this->name=name;
     }
 
     bool equalsTo( Vertex* otherV){

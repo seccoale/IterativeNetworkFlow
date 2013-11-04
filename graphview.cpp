@@ -12,7 +12,7 @@ GraphView::GraphView(QWidget *parent) :
     ui(new Ui::GraphView)
 {
     ui->setupUi(this);
-    this->jobs_inserted=0;
+    this->tasks_inserted=0;
     ui->centralWidget->setWindowTitle("RTS, INF. Prvided by Alessandro Secco (1041258) seccoale@dei.unipd.it");
     ui->graphicsView_graph->setSceneRect(0,0,300,450);
     this->currentScene=new QGraphicsScene();
@@ -28,42 +28,72 @@ GraphView::~GraphView()
     delete ui;
 }
 
-void GraphView::on_add_job_button_clicked()
+void GraphView::on_add_task_button_clicked()
 {
-    ui->add_job_button->setEnabled(false);
-    JobDeclarationWindow* jobDecl=new JobDeclarationWindow(this);
-    connect(jobDecl, SIGNAL(addJob(Job*)), this, SLOT(job_received(Job*)));
-    connect(jobDecl, SIGNAL(discardJob()), this, SLOT(job_discarded()));
-    jobDecl->show();
+    this->ui->add_task_button->setEnabled(false);
+    this->ui->removeBtn->setEnabled(false);
+    this->ui->editTaskBtn->setEnabled(false);
+   // this->ui->listTask->setEnabled(false);
+
+    TaskDeclarationWindow* taskDecl=new TaskDeclarationWindow(this);
+    taskDecl->setModal(true);
+    connect(taskDecl, SIGNAL(addTask(Task*)), this, SLOT(task_received(Task*)));
+    connect(taskDecl, SIGNAL(discardTask()), this, SLOT(task_discarded()));
+    taskDecl->show();
 }
-void GraphView::job_received(Job * job){
-    ui->add_job_button->setEnabled(true);
-    cout<<job->toString()->toUtf8().constData()<<endl;
-    this->ui->listJob->insertItem(++jobs_inserted, job->toString()->toUtf8().constData());
+void GraphView::task_received(Task * task){
+    this->ui->add_task_button->setEnabled(true);
+
+    cout<<task->toString()->toUtf8().constData()<<endl;
+    this->ui->listTask->insertItem(++tasks_inserted, task->toString()->toUtf8().constData());
 }
-void GraphView::job_discarded(){
-    ui->add_job_button->setEnabled(true);
+void GraphView::task_discarded(){
+    //this->ui->add_task_button->setEnabled(true);
+    //this->ui->editTaskBtn->setEnabled(true);
+    //this->ui->removeBtn->setEnabled(true);
 }
 
-void GraphView::on_listJob_itemClicked(QListWidgetItem *item)
+void GraphView::on_listTask_itemClicked(QListWidgetItem *item)
 {
-   ui->editJobBtn->setEnabled(true);
-   ui->removeBtn->setEnabled(true);
+    this->ui->editTaskBtn->setEnabled(true);
+    this->ui->removeBtn->setEnabled(true);
 }
-void GraphView::on_editJobBtn_clicked()
+void GraphView::on_editTaskBtn_clicked()
 {
-    QString selectedJob=this->ui->listJob->selectedItems().front()->text();
-    Job* job=new Job();
-    job=job->compile(selectedJob);
-    JobDeclarationWindow* jobEditWindow=new JobDeclarationWindow(this);
+ //  this->ui->add_task_button->setEnabled(false);
+   // this->ui->editTaskBtn->setEnabled(false);
+//    this->ui->removeBtn->setEnabled(false);
+
+    QString selectedTask=this->ui->listTask->selectedItems().front()->text();
+    Task* task=new Task();
+    task=task->compile(selectedTask);
+    TaskDeclarationWindow* taskEditWindow=new TaskDeclarationWindow(this, task, this->ui->listTask->currentIndex().row());
+    taskEditWindow->setModal(true);
+    taskEditWindow->show();
+    connect(taskEditWindow, SIGNAL(replaceTask(Task*,int)),this,SLOT(task_edited(Task*,int)));
+    connect(taskEditWindow, SIGNAL(rejected()),this,SLOT(task_discarded()));
 }
 void GraphView::on_removeBtn_clicked()
 {
-    QListWidgetItem* selected=this->ui->listJob->currentItem();
-    this->ui->listJob->removeItemWidget(selected);
+    QListWidgetItem* selected=this->ui->listTask->currentItem();
+    this->ui->listTask->removeItemWidget(selected);
     delete selected;
-    if(this->ui->listJob->selectedItems().isEmpty()){
-        this->ui->editJobBtn->setEnabled(false);
+    if(this->ui->listTask->selectedItems().isEmpty()){
+        this->ui->editTaskBtn->setEnabled(false);
         this->ui->removeBtn->setEnabled(false);
     }
+}
+void GraphView::task_edited(Task *newTask, int rowOldTask){
+    delete this->ui->listTask->item(rowOldTask);
+    this->ui->listTask->insertItem(rowOldTask, newTask->toString()->toUtf8().constData());
+    this->ui->listTask->setItemSelected(this->ui->listTask->item(rowOldTask), true);
+    this->ui->add_task_button->setEnabled(true);
+    this->ui->editTaskBtn->setEnabled(true);
+    this->ui->removeBtn->setEnabled(true);
+}
+void GraphView::on_listTask_itemDoubleClicked(QListWidgetItem *item)
+{
+    on_editTaskBtn_clicked();
+    this->ui->editTaskBtn->setEnabled(false);
+    this->ui->removeBtn->setEnabled(false);
 }
