@@ -11,9 +11,10 @@ public:
     static int gcd(vector<int> values);
     static int lcm(vector<int> values);
     static double findHyperperiod(vector<int> periods);
+    static double findHyperperiod(TaskSet* set);
+    static vector<double> detectFrameSizes(TaskSet* set);
 
 private:
-    vector<double> detectFrameSizes(bool first_constraint_considered, TaskSet* set);
     static int gcd_r(int a,int b);
     static int lcm(int a, int b);
 };

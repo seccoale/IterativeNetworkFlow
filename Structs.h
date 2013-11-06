@@ -9,15 +9,31 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdio.h>
+#include <cmath>
+#include <pthread.h>
 using namespace std;
 
 namespace inf{
+static int level_labeling=0;
+struct GraphElement{
+    int step=-1;//Nothing in the first graph has to be marked as changed!
+    void setLevelLabel(int newLevel){
+        if(newLevel<level_labeling){
+            cerr<<"This labeling level is not possible: NewLevel="<<newLevel<<" < "<<level_labeling<<"=CurrentLevel"<<endl;
+            throw new exception();
+        }
+        this->step=newLevel;
+    }
+};
+
 struct Task{
     string name;
     double period;
-    double deadline=0;
+    double deadline;
     double execution_time;
     Task(){
+        this->deadline=0;
+        this->name="NONAME";
     }
     Task(string NAME, double PERIOD, double DEADLINE, double EX_TIME){
         this->name=NAME;
@@ -25,21 +41,20 @@ struct Task{
         this->execution_time=EX_TIME;
         this->deadline=DEADLINE;
     }
-    QString* toString(){
-        QString* toReturn=new QString(this->name.c_str());
-        toReturn->append(" ("+QString::number(this->period)+", "+QString::number(this->execution_time)+", "+QString::number(this->deadline)+");");
+    string toString(){
+        string toReturn=this->name+" ("+QString::number(this->period).toStdString()+", "+QString::number(this->execution_time).toStdString()+", "+QString::number(this->deadline).toStdString()+");";
         return toReturn;
     }
-    static Task* compile(QString literal){
+    static Task* compile(QString* literal){
         Task* job=new Task();
-        int endName=literal.indexOf('(')-1;
-        job->name=literal.mid(0,endName).toUtf8().constData();
-        int endP=literal.indexOf(',', endName+2)-1;
-        job->period=literal.mid(endName+2, endP-endName-1).toDouble();
-        int endEx=literal.indexOf(',',endP+2);
-        job->execution_time=literal.mid(endP+3,endEx-endP-3).toDouble();
-        int endD=literal.indexOf(')')-1;
-        job->deadline=literal.mid(endEx+2, endD-endEx-1).toDouble();
+        int endName=literal->indexOf('(')-1;
+        job->name=literal->mid(0,endName).toStdString();
+        int endP=literal->indexOf(',', endName+2)-1;
+        job->period=literal->mid(endName+2, endP-endName-1).toDouble();
+        int endEx=literal->indexOf(',',endP+2);
+        job->execution_time=literal->mid(endP+3,endEx-endP-3).toDouble();
+        int endD=literal->indexOf(')')-1;
+        job->deadline=literal->mid(endEx+2, endD-endEx-1).toDouble();
         return job;
     }
 };
@@ -57,7 +72,7 @@ struct TaskSet{
     }
 };
 
-struct VertexLabel{
+struct VertexLabel:GraphElement{
     /** flow indication
          * @brief flow
          */
@@ -67,30 +82,27 @@ struct VertexLabel{
          */
     int from;
 };
-struct EdgeLabel{
+struct EdgeLabel:GraphElement{
     /** maximum flow through this edge
          * @brief capacity
          */
-    int capacity;
+    double capacity;
     /** flow which is currently passing through this edge
          * @brief tmpFlow
          */
-    int tmpFlow;
-    EdgeLabel(const int CAPACITY){this->capacity=CAPACITY;}
+    int tmpFlow=0;
+    EdgeLabel(const double CAPACITY){this->capacity=CAPACITY;}
     void setFlow(int new_flow){
         this->tmpFlow=new_flow;
     }
 };
-struct Vertex{
-    QString* name;
+struct Vertex:GraphElement{
+    string name;
     int index;
     vector<Vertex*> toVertexes;
     vector<Vertex*> fromVertexes;
     VertexLabel* tmpLabel;
-    Vertex(int index){
-        this->index=index;
-    }
-    Vertex(int index, QString* name){
+    Vertex(int index, string name){
         this->index=index;
         this->name=name;
     }
@@ -100,13 +112,37 @@ struct Vertex{
     }
 };
 
-struct Edge{
+struct JobVertex:Vertex{
+    JobVertex(int index, string name): Vertex(index, name){
+    }
+
+};
+
+struct FrameVertex:Vertex{
+    FrameVertex(int index, string name): Vertex(index, name){
+
+    }
+};
+
+struct SinkVertex:Vertex{
+    SinkVertex(int index):Vertex(index, "SINK"){
+
+    }
+};
+
+struct SourceVertex:Vertex{
+    SourceVertex(int index):Vertex(index, "SOURCE"){
+
+    }
+};
+
+struct Edge:GraphElement{
     int index;
-    int capacity;
+    double capacity;
     Vertex* from;
     Vertex* to;
     EdgeLabel* tmpLabel;
-    Edge(const int INDEX, const int CAPACITY,  Vertex* FROM,  Vertex* TO){
+    Edge(const int INDEX, const double CAPACITY,  Vertex* FROM,  Vertex* TO){
         this->index=INDEX;
         this->from=FROM;
         this->to=TO;
@@ -121,8 +157,9 @@ struct Edge{
 
 };
 
+
 struct Graph{
-    QString* name;
+    string name;
     /** Vertexes are represented as progessive integers
      * @brief vertexes vector of integers that represent vertexes
      */
@@ -139,41 +176,42 @@ struct Graph{
      * @brief edgeLabels
      */
     vector<EdgeLabel*> edgeLabels;
-    Graph(const string NAME, const vector<Edge*> EDGES, const vector< Vertex*> VERTEXES){
-        this->name=new QString(NAME.c_str());
+    Graph(string NAME, vector<Edge*> EDGES, vector< Vertex*> VERTEXES){
+        this->name=NAME.c_str();
         this->edges=EDGES;
         this->vertexes=VERTEXES;
     }
     Graph(const string NAME){
-        this->name=new QString(NAME.c_str());
+        this->name=NAME;
     }
     int size(){
         return this->vertexes.size();
     }
 
-    QString* toString() const{
-        QString* toReturn=new QString();
-        toReturn->append("digraph "+*this->name+" {\n");
-        Vertex* tmpV;
-        for(unsigned int i=0; i<this->vertexes.size(); i++){
-            tmpV=this->vertexes.at(i);
-            toReturn->append(QString::number(tmpV->index));
-            toReturn->append(";\n");
-        }
-        delete tmpV;
+    string toString() const{
+        string toReturn="digraph "+this->name+" {\n";
+        //    Vertex* tmpV;
+        //    for(unsigned int i=0; i<this->vertexes.size(); i++){
+        //        tmpV=this->vertexes.at(i);
+        //        toReturn=toReturn+tmpV->name+";\n";
+        //    }
         Edge* tmpE;
-        cout<<this->edges.size();
         for(unsigned int i=0; i<this->edges.size(); i++){
             tmpE=this->edges.at(i);
-            toReturn->append(QString::number(tmpE->from->index)+" -> " +QString::number(tmpE->to->index)+";\n");
+            string tmp=tmpE->from->name+" -> "+tmpE->to->name+";\n";
+            //toReturn->append(tmp.c_str());
+            toReturn=toReturn+tmpE->from->name+" -> "+tmpE->to->name+";\n";
+            // toReturn->append(tmpE->from->name);
+            // toReturn->append(" -> ");
+            // toReturn->append(tmpE->to->name);
+            // toReturn->append(";\n");
         }
         delete tmpE;
-        toReturn->append("}\n");
+        toReturn=toReturn+"}";
         return toReturn;
     }
     void addVertex( Vertex* newVertex){
         if(newVertex->index<this->size()){
-            cout<<"Vertice già inserito, non verrà inserito nuovamente"<<endl<<flush;
             return;
         }
         if(newVertex->index!=this->size()){
@@ -185,7 +223,6 @@ struct Graph{
         //check if this edge exists in the graph
         for(unsigned int i=0; i<this->edges.size(); i++){
             if(newEdge->equalsTo(this->edges.at(i))){
-                std::cout<<"Errore nell'inserimento di un arco!"<<endl<<flush;
                 throw new exception();
             }
         }
@@ -219,5 +256,125 @@ struct Graph{
         }
     }
 };
+
+struct INFGraph:Graph{
+    SinkVertex* sink;
+    SourceVertex* source;
+    vector<JobVertex*> jobVertexes;
+    vector<FrameVertex*> frameVertexes;
+    INFGraph(string name):Graph(name,vector<Edge*>(),vector<Vertex*>()){
+
+    }
+
+    void addEdge(JobVertex* job, double cap){
+        Edge* sjedge=new Edge(this->edges.size(), cap, this->source, job);
+        Graph::addEdge(sjedge);
+    }
+    void addEdge(JobVertex* job, FrameVertex* frame, double cap){
+        Edge* jfedge=new Edge(this->edges.size(),cap,job,frame);
+        Graph::addEdge(jfedge);
+    }
+    void addEdge(FrameVertex* frame, double cap){
+        Edge* fsedge=new Edge(this->edges.size(), cap, frame, sink);
+        Graph::addEdge((fsedge));
+    }
+    void importTaskSet(TaskSet* set, double frame, double hyperperiod){
+        this->source=new SourceVertex(0);
+        this->sink=new SinkVertex(1);
+        this->addVertex(source);
+        this->addVertex(sink);
+        int framesInH=floor(hyperperiod/frame);// must be integer!
+        for(int i=0; i<framesInH; i++){
+            string frameName="F_"+QString::number(i+1).toStdString();
+            FrameVertex* newFrame=new FrameVertex(vertexes.size(), frameName);
+            addVertex(newFrame);
+            frameVertexes.push_back(newFrame);
+            addEdge(newFrame, frame);
+        }
+        Task* tmp;
+        JobVertex* newJob;
+        for(int i=0; i<set->size(); i++){
+            int jobsInH=floor(hyperperiod/set->at(i)->period);// must be integer!
+            for(int j=1; j<=jobsInH; j++){//adds all jobs for a specific task
+                tmp=set->at(i);
+                string jobName="J_"+tmp->name+"_"+QString::number(j).toStdString();
+                newJob=new JobVertex(vertexes.size(),jobName.c_str());
+                this->addVertex(newJob);
+                this->jobVertexes.push_back(newJob);
+                this->addEdge(newJob, tmp->execution_time);
+                double jobStart=tmp->period*(j-1);
+                double jobEnd=tmp->deadline+jobStart;
+                for(int f=0; f<framesInH; f++){
+                    if((f+1)*frame<=jobEnd){//frame ends no later than job deadline
+                        if(f*frame>=jobStart){//frame starts no sooner than job release
+                            addEdge(newJob, frameVertexes.at(f), frame);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    string toStringComplete() const{
+        string toReturn="digraph "+this->name+" {\n";
+        // ALL edges with label & color if changed
+        Vertex* from;
+        Vertex* to;
+        Edge* edge;
+        for(unsigned int i=0; i<edges.size(); i++){
+            edge=edges.at(i);
+            from=edge->from;
+            to=edge->to;
+            toReturn+=from->name;
+            toReturn+=" -> ";
+            toReturn+=to->name;
+            toReturn+=" [label=\"[";
+            toReturn+=QString::number(edge->tmpLabel->capacity).toStdString()+", "+QString::number(edge->tmpLabel->tmpFlow).toStdString()+"]";
+            toReturn+="\"";
+            if(edge->step==level_labeling){
+                toReturn+=",color=\"red\"";
+            }
+            toReturn+="];\n";
+        }
+        // ALL JOB VERTEXES
+        toReturn+="subgraph cluster_JOBS{\nlabel=\"Job Vertexes\";\ncolor=lightgrey;\nstyle=filled\n";
+        JobVertex* jv;
+        for(unsigned int i=0; i<this->jobVertexes.size(); i++){
+            jv=jobVertexes.at(i);
+            toReturn+=jv->name;
+            if(jv->step==level_labeling){
+                toReturn+=" [color=\"red\"]";
+            }
+            toReturn+=" ;\n";
+        }
+        toReturn+="}\n";
+        // ALL FRAME VERTEXES
+        toReturn+="subgraph cluster_FRAMES{\nlabel=\"Frame Vertexes\";\ncolor=\"lightblue\";\nstyle=filled\n";
+        FrameVertex* fv;
+        for(unsigned int i=0; i<this->frameVertexes.size();i++){
+            fv=this->frameVertexes.at(i);
+            toReturn+=fv->name;
+            if(fv->step==level_labeling){
+                toReturn+=" [color=\"red\"]";
+            }
+            toReturn+=" ;\n";
+        }
+        toReturn+="}\n";
+        // SOURCE
+        toReturn+=source->name+" [shape=Mdiamond";
+        if(source->step==level_labeling){
+            toReturn+=",color=\"red\"";
+        }
+        toReturn+="];\n";
+        //SINK
+        toReturn+=sink->name+" [shape=Mdiamond";
+        if(sink->step==level_labeling){
+            toReturn+=",color=\"red\"";
+        }
+        toReturn+="];\n}";
+        cout<<toReturn<<endl;
+        return toReturn;
+    }
+};
 }
+
 #endif // STRUCTS_H

@@ -28,7 +28,8 @@ TaskDeclarationWindow::~TaskDeclarationWindow()
 
 void TaskDeclarationWindow::on_buttonBox_accepted()
 {
-    Task* task=new Task(ui->task_name->text().toUtf8().constData(),ui->periodSB->value(), ui->deadlineSB->value(), ui->exTimeSB->value());
+    QString taskname=ui->task_name->text();
+    Task* task=new Task(taskname.toStdString(),ui->periodSB->value(), ui->deadlineSB->value(), ui->exTimeSB->value());
     if(edit){
         emit replaceTask(task, this->row_edited);
     }
@@ -43,7 +44,7 @@ void TaskDeclarationWindow::on_buttonBox_rejected()
 }
 void TaskDeclarationWindow::editTask(QString* taskLiteral){
     Task* task=new Task();
-    task=task->compile(*taskLiteral);
+    task=task->compile(taskLiteral);
     QString* taskName=new QString(task->name.c_str());
     this->ui->task_name->setText(*taskName);
     delete taskName;
