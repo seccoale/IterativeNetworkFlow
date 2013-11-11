@@ -6,6 +6,7 @@
 #include <QDir>
 #include <unistd.h>
 #include <infalgoithms.h>
+#include "fordfulkersonrunner.h"
 
 #define RESOURCES_FOLDER QCoreApplication::applicationDirPath().toStdString()+QDir::separator().toLatin1()+"resources"+QDir::separator().toLatin1()
 #define FIRST_IMAGE RESOURCES_FOLDER+"first_image.png"
@@ -14,7 +15,9 @@
 #define TMP_GRAPH_OUTPUT_FILE "digraph.tmp.png"
 #define TMP_GRAPH_OUTPUT RESOURCES_FOLDER+TMP_GRAPH_OUTPUT_FILE
 #define DESCR_AND_AUTHOR "RTS, INF. Prvided by Alessandro Secco (1041258) seccoale@dei.unipd.it"
-#define TIME_TO_SLEEP 1
+#define TAB_INDEX_TASK 0
+#define TAB_INDEX_GRAPH 1
+#define TAB_INDEX_SCHEDULE 2
 using namespace std;
 using namespace inf;
 GraphView::GraphView(QWidget *parent) :
@@ -24,12 +27,11 @@ GraphView::GraphView(QWidget *parent) :
     ui->setupUi(this);
     this->tasks_inserted=0;
     ui->centralWidget->setWindowTitle(DESCR_AND_AUTHOR);
-    ui->graphicsView_graph->setSceneRect(0,0,1400,600);
+    ui->graphicsView_graph->setSceneRect(-5000,-5000,10000,10000);
     this->currentScene=new QGraphicsScene();
-    this->currentScene->setSceneRect(0,0,1400,600);
+    this->currentScene->setSceneRect(-10000,-100000,10000,10000);
     string first_img_loc=FIRST_IMAGE;
-    QPixmap first_img(first_img_loc.c_str());
-    this->currentScene->addPixmap(first_img);
+    setNewImage(first_img_loc);
     ui->graphicsView_graph->setScene(this->currentScene);
 }
 
@@ -43,18 +45,24 @@ void GraphView::setNewImage(string loc){
     QPixmap img(loc.c_str());
     this->currentPixmap=this->currentScene->addPixmap(img);
     this->currentScene->addPixmap(img);
+    this->ui->graphicsView_graph->fitInView(this->currentPixmap);
     //ui->graphicsView_graph->setScene(this->currentScene);
     //ui->graphicsView_graph->update();
 }
 
 void GraphView::replaceImg(string loc){
     QGraphicsPixmapItem prev_img(this->currentPixmap);
+    this->currentScene->setSceneRect(-10000, -10000, 10000, 10000);
     this->currentScene->removeItem(this->currentPixmap);
+    this->currentScene->update();
     QPixmap new_img(loc.c_str());
     this->currentPixmap=this->currentScene->addPixmap(new_img);
+    this->currentPixmap->update();
+    this->ui->graphicsView_graph->fitInView(this->currentPixmap, Qt::KeepAspectRatio);
+    this->ui->graphicsView_graph->repaint();
     //this->currentPixmap->setPixmap(new_img);
-    this->history.push_front(&prev_img);
-   /* QPixmap img(loc.c_str());
+    //this->history.push_front(&prev_img);
+    /* QPixmap img(loc.c_str());
     this->currentScene->clear();
     this->history.push_back(this->currentPixmap);
     this->currentPixmap=this->currentScene->addPixmap(img);
@@ -74,8 +82,11 @@ void GraphView::on_add_task_button_clicked()
 }
 void GraphView::task_received(Task * task){
     this->ui->add_task_button->setEnabled(true);
-
     this->ui->listTask->insertItem(++tasks_inserted, task->toString().c_str());
+    cout<<this->ui->listTask->count()<<endl;
+    if(this->ui->listTask->count()>1){
+        this->ui->import_graph_button->setEnabled(true);
+    }
 }
 void GraphView::task_discarded(){
     //this->ui->add_task_button->setEnabled(true);
@@ -108,6 +119,9 @@ void GraphView::on_removeBtn_clicked()
     QListWidgetItem* selected=this->ui->listTask->currentItem();
     this->ui->listTask->removeItemWidget(selected);
     delete selected;
+    if(this->ui->listTask->count()<2){
+        this->ui->import_graph_button->setEnabled(false);
+    }
     if(this->ui->listTask->selectedItems().isEmpty()){
         this->ui->editTaskBtn->setEnabled(false);
         this->ui->removeBtn->setEnabled(false);
@@ -130,8 +144,8 @@ void GraphView::on_listTask_itemDoubleClicked(QListWidgetItem *item)
 
 void GraphView::on_import_graph_button_clicked()
 {
-    INFGraph* g=new INFGraph(ui->graphNameLE->text().toStdString());
-    TaskSet* set=new TaskSet();
+    graph=new INFGraph(ui->graphNameLE->text().toStdString());
+    this->set=new TaskSet();
     for(int i=0; i<ui->listTask->count(); i++){
         Task* newTask=new Task();
         QString literal=ui->listTask->item(i)->text();
@@ -139,9 +153,15 @@ void GraphView::on_import_graph_button_clicked()
         set->addTask(newTask);
     }
     this->frame_sizes=INFAlgoithms::detectFrameSizes(set);
+    for(unsigned int i=0; i<frame_sizes.size(); i++){
+        this->ui->frameSizes->addItem(QString::number(frame_sizes.at(i)));
+    }
+    this->ui->hyperperiod->display(INFAlgoithms::findHyperperiod(set));
     this->current_frame=0;
-    g->importTaskSet(set, this->frame_sizes.at(this->current_frame), INFAlgoithms::findHyperperiod(set));
-    drawGraph(g->toStringComplete());
+    graph->importTaskSet(set, this->frame_sizes.at(this->current_frame), INFAlgoithms::findHyperperiod(set));
+    drawGraph(graph->toStringComplete());
+    ui->play_stop_button->setEnabled(true);
+    ui->nextButton->setEnabled(true);
 }
 
 void GraphView::drawGraph(string literal){
@@ -156,6 +176,29 @@ void GraphView::drawGraph(string literal){
     string new_image_no_sapces=resources_folder->toStdString()+TMP_GRAPH_OUTPUT_FILE;
     string command="dot -Tpng "+resources_folder->toStdString()+TMP_GRAPH_INPUT_FILE+" -O "+new_image_no_sapces.c_str();
     system(command.c_str());
-    this->setNewImage(new_image_spaces);
+    this->replaceImg(new_image_spaces);
+    //switches to the correct tab
+    if(this->ui->tabWidget->currentIndex()!=TAB_INDEX_GRAPH){
+        this->ui->tabWidget->setCurrentIndex(TAB_INDEX_GRAPH);
+    }
+}
 
+void GraphView::on_play_stop_button_clicked()
+{
+    cout<<this->graph->toStringComplete()<<endl;
+    FordFulkersonRunner* runner=new FordFulkersonRunner(this, this->graph);
+    this->ui->play_stop_button->setEnabled(false);
+    runner->run(true);
+}
+
+void GraphView::on_frameSizes_activated(const QString &arg1)
+{
+    double frame=arg1.toDouble();
+    this->graph->importTaskSet(this->set, frame, INFAlgoithms::findHyperperiod(this->set));
+    this->ui->play_stop_button->setEnabled(true);
+    drawGraph(this->graph->toStringComplete());
+}
+
+void GraphView::endedFlowComputation(double maxFlow){
+    cout<<"The computation ended with flow="<<maxFlow<<endl;
 }

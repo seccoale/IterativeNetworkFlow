@@ -23,6 +23,10 @@ struct GraphElement{
             throw new exception();
         }
         this->step=newLevel;
+        if(this->step>=level_labeling){
+            level_labeling=this->step;
+        }
+        cout<<"GraphElement: this step="<<this->step<<" , general level="<<level_labeling<<endl;
     }
 };
 
@@ -90,7 +94,7 @@ struct EdgeLabel:GraphElement{
     /** flow which is currently passing through this edge
          * @brief tmpFlow
          */
-    int tmpFlow=0;
+    double tmpFlow=0;
     EdgeLabel(const double CAPACITY){this->capacity=CAPACITY;}
     void setFlow(int new_flow){
         this->tmpFlow=new_flow;
@@ -254,6 +258,31 @@ struct Graph{
         if(!foundTo){
             this->addVertex(to);
         }
+        foundTo=false;
+        for(unsigned int i=0;!foundTo && i<from->toVertexes.size(); i++){
+            foundTo=from->toVertexes.at(i)->index==to->index;
+        }
+        if(!foundTo){
+            from->toVertexes.push_back(to);
+        }
+        foundFrom=false;
+        for(unsigned int i=0; !foundFrom && i<to->fromVertexes.size(); i++){
+            foundFrom=to->fromVertexes.at(i)->index==from->index;
+        }
+        if(!foundFrom){
+            to->fromVertexes.push_back(from);
+        }
+    }
+    int edgeIndex(Vertex* from, Vertex* to){
+        int index=-1;
+        Edge* edge;
+        for(unsigned int i=0; i<this->edges.size(); i++){
+            edge=this->edges.at(i);
+            if(edge->from->index==from->index && edge->to->index==to->index){
+                return i;
+            }
+        }
+        return index;
     }
 };
 
@@ -279,11 +308,22 @@ struct INFGraph:Graph{
         Graph::addEdge((fsedge));
     }
     void importTaskSet(TaskSet* set, double frame, double hyperperiod){
+        level_labeling=-1;
+        this->vertexes.clear();
+        this->jobVertexes.clear();;
+        this->frameVertexes.clear();
+        this->edges.clear();
+        this->vertexLabels.clear();
+        this->edgeLabels.clear();
+        cout<<"==>"<<vertexes.size()<<endl;
         this->source=new SourceVertex(0);
+        this->source->step=-1;
         this->sink=new SinkVertex(1);
+        this->sink->step=-1;
         this->addVertex(source);
         this->addVertex(sink);
         int framesInH=floor(hyperperiod/frame);// must be integer!
+        cout<<"==>"<<" frame vertexes in H=="<<framesInH<<endl;
         for(int i=0; i<framesInH; i++){
             string frameName="F_"+QString::number(i+1).toStdString();
             FrameVertex* newFrame=new FrameVertex(vertexes.size(), frameName);
@@ -305,11 +345,14 @@ struct INFGraph:Graph{
                 double jobStart=tmp->period*(j-1);
                 double jobEnd=tmp->deadline+jobStart;
                 for(int f=0; f<framesInH; f++){
+                    cout<<"JOB: "<<newJob->name<<": ["<<jobStart<<", "<<jobEnd<<"]. FRAMEs: ";
                     if((f+1)*frame<=jobEnd){//frame ends no later than job deadline
                         if(f*frame>=jobStart){//frame starts no sooner than job release
+                            cout<<frameVertexes.at(f)->name<<", ";
                             addEdge(newJob, frameVertexes.at(f), frame);
                         }
                     }
+                    cout<<endl;
                 }
             }
         }
@@ -330,7 +373,8 @@ struct INFGraph:Graph{
             toReturn+=" [label=\"[";
             toReturn+=QString::number(edge->tmpLabel->capacity).toStdString()+", "+QString::number(edge->tmpLabel->tmpFlow).toStdString()+"]";
             toReturn+="\"";
-            if(edge->step==level_labeling){
+            if(edge->step>=level_labeling){
+                level_labeling=edge->step;
                 toReturn+=",color=\"red\"";
             }
             toReturn+="];\n";
@@ -341,7 +385,8 @@ struct INFGraph:Graph{
         for(unsigned int i=0; i<this->jobVertexes.size(); i++){
             jv=jobVertexes.at(i);
             toReturn+=jv->name;
-            if(jv->step==level_labeling){
+            if(jv->step>=level_labeling){
+                level_labeling=jv->step;
                 toReturn+=" [color=\"red\"]";
             }
             toReturn+=" ;\n";
@@ -353,7 +398,8 @@ struct INFGraph:Graph{
         for(unsigned int i=0; i<this->frameVertexes.size();i++){
             fv=this->frameVertexes.at(i);
             toReturn+=fv->name;
-            if(fv->step==level_labeling){
+            if(fv->step>=level_labeling){
+                level_labeling=fv->step;
                 toReturn+=" [color=\"red\"]";
             }
             toReturn+=" ;\n";
@@ -361,17 +407,18 @@ struct INFGraph:Graph{
         toReturn+="}\n";
         // SOURCE
         toReturn+=source->name+" [shape=Mdiamond";
-        if(source->step==level_labeling){
+        if(source->step>=level_labeling){
+            level_labeling=source->step;
             toReturn+=",color=\"red\"";
         }
         toReturn+="];\n";
         //SINK
         toReturn+=sink->name+" [shape=Mdiamond";
-        if(sink->step==level_labeling){
+        if(sink->step>=level_labeling){
+            level_labeling=sink->step;
             toReturn+=",color=\"red\"";
         }
         toReturn+="];\n}";
-        cout<<toReturn<<endl;
         return toReturn;
     }
 };

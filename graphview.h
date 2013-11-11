@@ -13,6 +13,7 @@
 #include <graphviz/gvc.h>
 #include <fstream>
 #include <iostream>
+//#include "fordfulkersonrunner.h"
 
 namespace Ui {
 class GraphView;
@@ -27,6 +28,8 @@ public:
     explicit GraphView(QWidget *parent = 0);
     void drawGraph(string literal);
     ~GraphView();
+public slots:
+    void endedFlowComputation(double maxFlow);
 private slots:
     void on_add_task_button_clicked();
     void task_received(Task* task);
@@ -43,10 +46,15 @@ private slots:
 
     void on_import_graph_button_clicked();
 
+    void on_play_stop_button_clicked();
+
+    void on_frameSizes_activated(const QString &arg1);
+
 private:
     vector<double> frame_sizes;
     int current_frame=0;
-    GVC_t* gvc;
+    INFGraph* graph;
+    TaskSet* set;
     int tasks_inserted;
     Ui::GraphView *ui;
     QGraphicsScene* currentScene;
@@ -55,6 +63,7 @@ private:
     QStack<QGraphicsPixmapItem*> forward;
     void setNewImage(string loc);
     void replaceImg(string loc);
+   // FordFulkersonRunner* runner;
 };
 
 #endif // GRAPHVIEW_H

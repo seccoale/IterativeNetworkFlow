@@ -15,12 +15,14 @@ TEMPLATE = app
 SOURCES += main.cpp\
         graphview.cpp \
     taskdeclarationwindow.cpp \
-    infalgoithms.cpp
+    infalgoithms.cpp \
+    fordfulkersonrunner.cpp
 
 HEADERS  += graphview.h \
     Structs.h \
     taskdeclarationwindow.h \
-    infalgoithms.h
+    infalgoithms.h \
+    fordfulkersonrunner.h
 
 FORMS    += graphview.ui \
     taskdeclarationwindow.ui
