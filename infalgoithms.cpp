@@ -24,7 +24,7 @@ vector<double> INFAlgoithms::detectFrameSizes(TaskSet* set){
                 third_constraint_satisfied=2*f-gcd_r(((int)set->at(j)->period)*100, f)<=100*((int)set->at(j)->deadline);
             }
             if(third_constraint_satisfied){
-                toReturn.push_back((double)f/100.);
+                toReturn.push_back((double)f/100.0);
             }
         }
     }

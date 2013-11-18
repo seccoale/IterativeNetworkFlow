@@ -3,23 +3,31 @@
 #include "Structs.h"
 #include "infalgoithms.h"
 #include <semaphore.h>
-#include <pthread.h>
 #include "graphview.h"
 #include <unistd.h>
-class FordFulkersonRunner:public QObject
+#include <QThread>
+class FordFulkersonRunner:public QThread
 {
     Q_OBJECT
 public:
-    FordFulkersonRunner(GraphView* view, INFGraph* graph);
+    explicit FordFulkersonRunner(GraphView* view, INFGraph* graph);
     void setFrame(double newFrame);
-    void run(bool whole);
     void nextStep();
     void setGraph(INFGraph* newGraph);
+    void run();
+    void setRunWhole(bool whole);
+    static void* pthreadRunAlgorithm(void* param);
+    bool isRunning();
+    void suspend();
+public slots:
 signals:
     void ended(double maxFlow);
+    void repaint();
 private:
+    void *runAlgorithm();
     //vector<int> pred;
     //vector<double> epsilon;
+    //double TIME_TO_SLEEP;
     bool running;
     sem_t* semaphore;
     bool runWhole;

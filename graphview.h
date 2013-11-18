@@ -27,9 +27,11 @@ class GraphView : public QMainWindow
 public:
     explicit GraphView(QWidget *parent = 0);
     void drawGraph(string literal);
+    bool fastPlay();
     ~GraphView();
 public slots:
     void endedFlowComputation(double maxFlow);
+    void repaintRequested();
 private slots:
     void on_add_task_button_clicked();
     void task_received(Task* task);
@@ -50,9 +52,17 @@ private slots:
 
     void on_frameSizes_activated(const QString &arg1);
 
+    void on_sleepMS_valueChanged(int ms);
+    void on_nextButton_clicked();
+
+signals:
+    void sleepMSChanged(int ms);
+
 private:
+    bool play=false;
     vector<double> frame_sizes;
     int current_frame=0;
+    //FordFulkersonRunner* runner;
     INFGraph* graph;
     TaskSet* set;
     int tasks_inserted;

@@ -26,7 +26,6 @@ struct GraphElement{
         if(this->step>=level_labeling){
             level_labeling=this->step;
         }
-        cout<<"GraphElement: this step="<<this->step<<" , general level="<<level_labeling<<endl;
     }
 };
 

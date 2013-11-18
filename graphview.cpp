@@ -18,8 +18,14 @@
 #define TAB_INDEX_TASK 0
 #define TAB_INDEX_GRAPH 1
 #define TAB_INDEX_SCHEDULE 2
+#define PLAY_TEXT "play"
+#define STOP_TEXT "stop"
+
 using namespace std;
 using namespace inf;
+
+static FordFulkersonRunner* runner;
+
 GraphView::GraphView(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::GraphView)
@@ -54,14 +60,14 @@ void GraphView::replaceImg(string loc){
     QGraphicsPixmapItem prev_img(this->currentPixmap);
     this->currentScene->setSceneRect(-10000, -10000, 10000, 10000);
     this->currentScene->removeItem(this->currentPixmap);
-    this->currentScene->update();
     QPixmap new_img(loc.c_str());
     this->currentPixmap=this->currentScene->addPixmap(new_img);
     this->currentPixmap->update();
     this->ui->graphicsView_graph->fitInView(this->currentPixmap, Qt::KeepAspectRatio);
     this->ui->graphicsView_graph->repaint();
+    this->ui->graphicsView_graph->update();
     //this->currentPixmap->setPixmap(new_img);
-    //this->history.push_front(&prev_img);
+    this->history.push_front(&prev_img);
     /* QPixmap img(loc.c_str());
     this->currentScene->clear();
     this->history.push_back(this->currentPixmap);
@@ -152,6 +158,7 @@ void GraphView::on_import_graph_button_clicked()
         newTask=newTask->compile(&literal);
         set->addTask(newTask);
     }
+    this->ui->frameSizes->clear();
     this->frame_sizes=INFAlgoithms::detectFrameSizes(set);
     for(unsigned int i=0; i<frame_sizes.size(); i++){
         this->ui->frameSizes->addItem(QString::number(frame_sizes.at(i)));
@@ -160,6 +167,8 @@ void GraphView::on_import_graph_button_clicked()
     this->current_frame=0;
     graph->importTaskSet(set, this->frame_sizes.at(this->current_frame), INFAlgoithms::findHyperperiod(set));
     drawGraph(graph->toStringComplete());
+    this->ui->play_stop_button->setText(PLAY_TEXT);
+    free(runner);
     ui->play_stop_button->setEnabled(true);
     ui->nextButton->setEnabled(true);
 }
@@ -185,20 +194,101 @@ void GraphView::drawGraph(string literal){
 
 void GraphView::on_play_stop_button_clicked()
 {
-    cout<<this->graph->toStringComplete()<<endl;
-    FordFulkersonRunner* runner=new FordFulkersonRunner(this, this->graph);
-    this->ui->play_stop_button->setEnabled(false);
-    runner->run(true);
+    this->play=!this->play;
+    if(this->play){
+        cout<<"playing"<<endl;
+        this->ui->play_stop_button->setText(STOP_TEXT);
+        if(runner==NULL){
+            runner=new FordFulkersonRunner(this, this->graph);
+            connect(this, SIGNAL(sleepMSChanged(int)), runner, SLOT(setTimeToSleep(int)));
+        }
+        runner->nextStep();
+        runner->setRunWhole(true);
+        //this->ui->play_stop_button->setEnabled(false);
+        if(!runner->isRunning()){
+            runner->start();
+        }
+    }
+    else {
+        cout<<"stopping"<<endl;
+        this->ui->play_stop_button->setText(PLAY_TEXT);
+        //runner had already been created!
+        runner->setRunWhole(false);
+        //runner->suspend();
+    }
 }
 
 void GraphView::on_frameSizes_activated(const QString &arg1)
 {
     double frame=arg1.toDouble();
     this->graph->importTaskSet(this->set, frame, INFAlgoithms::findHyperperiod(this->set));
+    this->ui->play_stop_button->setText(PLAY_TEXT);
+    this->play=false;
     this->ui->play_stop_button->setEnabled(true);
+    this->ui->nextButton->setEnabled(true);
+    this->ui->prevButton->setEnabled(false);
     drawGraph(this->graph->toStringComplete());
 }
 
 void GraphView::endedFlowComputation(double maxFlow){
     cout<<"The computation ended with flow="<<maxFlow<<endl;
+    this->ui->play_stop_button->setEnabled(false);
+    QString* notification=new QString("frame size ");
+    notification->append(this->ui->frameSizes->currentText());
+    notification->append(" has a maximum flow of ");
+    notification->append(QString::number(maxFlow));
+    double totalExecutionTime=0;
+    for(unsigned int i=0; i<this->graph->edges.size(); i++){
+        if(this->graph->edges.at(i)->from->index==this->graph->source->index){
+            totalExecutionTime+=this->graph->edges.at(i)->tmpLabel->capacity;
+        }
+    }
+    if(maxFlow<totalExecutionTime){
+        notification->append("<");
+    }
+    else {
+        notification->append(">=");
+    }
+    notification->append(QString::number(totalExecutionTime));
+    if(maxFlow<totalExecutionTime){
+        int i=this->ui->frameSizes->currentIndex();
+        if(++i<this->ui->frameSizes->count()){
+            notification->append(" \nTry with frame size ");
+            notification->append(this->ui->frameSizes->itemText(i));
+            notification->append("!");
+        }
+    }
+    this->currentScene->addText(*notification);
+    this->ui->play_stop_button->setEnabled(false);
+    this->ui->nextButton->setEnabled(false);
+}
+void GraphView::on_sleepMS_valueChanged(int ms)
+{
+    emit sleepMSChanged(ms);
+}
+
+void GraphView::on_nextButton_clicked()
+{
+    cout<<this->graph->toStringComplete()<<endl;
+    if(runner==NULL){
+        runner=new FordFulkersonRunner(this, this->graph);
+        connect(this, SIGNAL(sleepMSChanged(int)), runner, SLOT(setTimeToSleep(int)));
+    }
+    runner->setRunWhole(false);
+    this->ui->play_stop_button->setEnabled(false);
+    if(!runner->isRunning()){
+        runner->start();
+    }
+    else {
+        runner->nextStep();
+        //while(runner->isRunning()){
+        //   QCoreApplication::processEvents();
+        //}
+    }
+}
+void GraphView::repaintRequested(){
+    this->drawGraph(this->graph->toStringComplete());
+}
+bool GraphView::fastPlay(){
+    return this->ui->fastPlayCB->isChecked();
 }
