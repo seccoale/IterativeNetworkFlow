@@ -358,6 +358,7 @@ void GraphView::drawSchedule(){
         *name=name->mid(name->lastIndexOf("_")+1);
         int idx=name->toInt();
         cout<<fv->name<<" : "<<idx<<endl;
+        
     }
 }
 

@@ -60,7 +60,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="periodSB"/>
+      <widget class="QDoubleSpinBox" name="periodSB">
+       <property name="maximum">
+        <double>9999.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.000000000000000</double>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="label_4">
@@ -70,7 +77,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="exTimeSB"/>
+      <widget class="QDoubleSpinBox" name="exTimeSB">
+       <property name="maximum">
+        <double>9999.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.000000000000000</double>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="label_3">
@@ -80,7 +94,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="deadlineSB"/>
+      <widget class="QDoubleSpinBox" name="deadlineSB">
+       <property name="maximum">
+        <double>9999.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.000000000000000</double>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="verticalSpacer_4">

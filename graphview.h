@@ -52,28 +52,37 @@ private slots:
 
     void on_frameSizes_activated(const QString &arg1);
 
-    void on_sleepMS_valueChanged(int ms);
+   // void on_sleepMS_valueChanged(int ms);
     void on_nextButton_clicked();
+
+    void on_prevButton_clicked();
+
+    void on_saveGraphBTN_clicked();
 
 signals:
     void sleepMSChanged(int ms);
 
 private:
+    void drawSchedule();
     bool play=false;
     vector<double> frame_sizes;
-    int current_frame=0;
+    double frame;
     //FordFulkersonRunner* runner;
     INFGraph* graph;
     TaskSet* set;
     int tasks_inserted;
     Ui::GraphView *ui;
     QGraphicsScene* currentScene;
+    QGraphicsScene* schedScene;
     QGraphicsPixmapItem* currentPixmap;
-    QStack<QGraphicsPixmapItem*> history;
-    QStack<QGraphicsPixmapItem*> forward;
+    vector<QGraphicsItem*>* scheduleItems;
+    QStack<QGraphicsPixmapItem*>* history;
+    QStack<QGraphicsPixmapItem*>* forward;
     void setNewImage(string loc);
     void replaceImg(string loc);
-   // FordFulkersonRunner* runner;
+    void initGantt();
 };
 
 #endif // GRAPHVIEW_H
+
+
