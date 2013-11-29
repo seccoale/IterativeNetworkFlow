@@ -21,6 +21,7 @@
 #define TAB_INDEX_SCHEDULE 2
 #define PLAY_TEXT "play"
 #define STOP_TEXT "stop"
+#define PEN_BRUSH_WIDTH 20
 
 using namespace std;
 using namespace inf;
@@ -32,6 +33,8 @@ static int schedStartX;
 static int schedStartY;
 static int schedEndX;
 static int schedEndY;
+static int frameWidth;
+static int* framePad;
 
 GraphView::GraphView(QWidget *parent) :
     QMainWindow(parent),
@@ -198,7 +201,7 @@ void GraphView::drawGraph(string literal){
     this->replaceImg(new_image_spaces);
     this->drawSchedule();
     //switches to the correct tab
-    if(this->ui->tabWidget->currentIndex()!=TAB_INDEX_GRAPH){
+    if(this->ui->tabWidget->currentIndex()==TAB_INDEX_TASK){
         this->ui->tabWidget->setCurrentIndex(TAB_INDEX_GRAPH);
     }
 }
@@ -271,7 +274,13 @@ void GraphView::endedFlowComputation(double maxFlow){
             notification->append("!");
         }
     }
+    else {
+        notification->append("\nSchedulable with Frame Size = ");
+        notification->append(QString::number(frame));
+        notification->append("!!!");
+    }
     this->currentScene->addText(*notification);
+    this->schedScene->addText(*notification)->setPos(schedStartX-50, schedStartY-50);
     this->ui->play_stop_button->setEnabled(false);
     this->ui->nextButton->setEnabled(false);
 }
@@ -287,7 +296,7 @@ void GraphView::on_nextButton_clicked()
     if(this->forward->isEmpty()){
         if(runner==NULL){
             runner=new FordFulkersonRunner(this, this->graph);
-         //   connect(this, SIGNAL(sleepMSChanged(int)), runner, SLOT(setTimeToSleep(int)));
+            //   connect(this, SIGNAL(sleepMSChanged(int)), runner, SLOT(setTimeToSleep(int)));
         }
         runner->setRunWhole(false);
         if(!runner->isRunning()){
@@ -347,22 +356,87 @@ void GraphView::on_saveGraphBTN_clicked()
     system(command.c_str());
 }
 void GraphView::drawSchedule(){
+    cout<<"DRAW SCHEDULE"<<endl;
     for(unsigned int i=0; i<this->scheduleItems->size(); i++){
         this->schedScene->removeItem(this->scheduleItems->at(i));
     }
+    this->ui->graphicsView_schedule->repaint();
+    int numFrame=(int)this->ui->hyperperiod->value()/frame;
+    framePad=new int[numFrame];
+    for(int i=0; i<numFrame; i++){
+        framePad[i]=0;
+    }
     FrameVertex* fv;
-    QString* name;
+    QPen* pen=new QPen(*new QBrush(Qt::Dense1Pattern), PEN_BRUSH_WIDTH);
     for(unsigned int i=0; i<this->graph->frameVertexes.size(); i++){
         fv=this->graph->frameVertexes.at(i);
-        name=new QString(fv->name.c_str());
-        *name=name->mid(name->lastIndexOf("_")+1);
-        int idx=name->toInt();
-        cout<<fv->name<<" : "<<idx<<endl;
+        for(unsigned int jvi=0; jvi<fv->fromVertexes.size(); jvi++){
+            addToSchedule((JobVertex*)fv->fromVertexes.at(jvi),fv, pen);
+        }
+    }
+}
+void GraphView::addToSchedule(JobVertex *jv, FrameVertex *fv, QPen* pen){
+    int edgIdx=this->graph->edgeIndex(jv,fv);
+    Edge* e=this->graph->edges.at(edgIdx);
+    if(e->tmpLabel->tmpFlow>0){
+        QString* frameName;
+        QString* jobName;
+        frameName=new QString(fv->name.c_str());
+        *frameName=frameName->mid(frameName->lastIndexOf("_")+1);
+        jobName=new QString(jv->name.c_str());
+        *jobName=jobName->mid(jobName->indexOf("_")+1);
+        *jobName=jobName->mid(0,jobName->lastIndexOf("_"));
+        int taskIdx;
+        for(unsigned int i=0; i<this->set->size();i++){
+            if(this->set->at(i)->name.compare(jobName->toStdString())==0){
+                cout<<"TASKIDX IS "<<i<<": "<<this->set->at(i)->name<<"=="<<jobName->toStdString()<<endl;
+                taskIdx=i;
+                break;
+            }
+        }
+        int frameIdx=frameName->toInt()-1;
+        cout<<fv->name<<" : "<<frameIdx<<endl;
+        cout<<jv->name<<" : "<<taskIdx<<endl;
+        int r,g,b;
+        r=255*taskIdx/this->set->size();
+        g=255*(taskIdx+this->set->size()/2)/this->set->size();
+        b=255*(taskIdx+this->set->size()/3)/this->set->size();
+        cout<<"COLOR: "<<r<<","<<g<<","<<b<<endl;
+        pen->setColor(*new QColor(r, g,b));
+        int length=(e->tmpLabel->tmpFlow/frame)*frameWidth;
+        int y=schedStartY+schedHeight*(taskIdx+1);
+        int x=schedStartX+frameWidth*frameIdx/*+span[frameIdx]*/;
+        cout<<"THE X IS: "<<x;
+        if(x+framePad[frameIdx]>frameIdx*frameWidth){
+            cout<<x<<"+"<<framePad[frameIdx]<<endl;
+            cerr<<"ERROR IN SCHEDULE!"<<endl<<flush;
+            //throw new exception();
+        }
+        cout<<x<<"+"<<framePad[frameIdx]<<endl;
+        x+=framePad[frameIdx];
+        framePad[frameIdx]+=length;
+        this->scheduleItems->push_back(this->schedScene->addLine(x+pen->width()/2,y-pen->width(),x+length-pen->width()/2,y-pen->width(), *pen));
+        this->scheduleItems->push_back(this->schedScene->addLine(x+length, y, x+length, y-schedHeight/3));
+        int timeFrom=round(100*this->frame/frameWidth*(abs(schedStartX-x)));
+        int timeTo=timeFrom+e->tmpLabel->tmpFlow*100;
+        this->scheduleItems->push_back(this->schedScene->addText(*new QString(QString::number(timeTo/100.))));
+        this->scheduleItems->back()->setPos(x+length-30,y-schedHeight*2/7);
+        this->scheduleItems->push_back(this->schedScene->addLine(x, y, x, y-schedHeight/3));
+        this->scheduleItems->push_back(this->schedScene->addText(*new QString(QString::number((timeFrom/100.)))));
+        this->scheduleItems->back()->setPos(x,y-schedHeight*1/5);
+        cout<<"Add to schedule edge "<<jv->name<<"->"<<fv->name<<endl;
     }
 }
 
 void GraphView::initGantt(){
     cout<<"Gantt Inits"<<endl;
+    const int numFrames=this->ui->hyperperiod->value()/this->frame;
+    delete framePad;
+    framePad=new int[numFrames];
+    for(int i=0; i<numFrames; i++){
+        framePad[i]=0;
+    }
+    this->scheduleItems->clear();
     this->schedScene->clear();
     schedWidth=this->width()-200;
     schedStartY=-this->height()/3+50;
@@ -377,10 +451,10 @@ void GraphView::initGantt(){
     this->schedScene->addText(graphName)->setY(schedStartY-50);
     for(int i=1; i<=this->tasks_inserted; i++){
         this->schedScene->addLine(schedStartX ,schedStartY+schedHeight*i, schedEndX, schedStartY+schedHeight*i);
-        this->schedScene->addText(this->ui->listTask->item(i-1)->text())->setPos(schedStartX,schedStartY+schedHeight*i-20);
+        this->schedScene->addText(this->ui->listTask->item(i-1)->text())->setPos(schedStartX,schedStartY+schedHeight*i-schedHeight/2);
     }
     int width=schedEndX-schedStartX;
-    const int frameWidth=width*frame/this->ui->hyperperiod->value();
+    frameWidth=width*frame/this->ui->hyperperiod->value();
     int i=0;
     for(double f=0; f<this->ui->hyperperiod->value()+0.01; f+=frame){
         this->schedScene->addLine(schedStartX+frameWidth*i,schedStartY,schedStartX+frameWidth*i, schedEndY);

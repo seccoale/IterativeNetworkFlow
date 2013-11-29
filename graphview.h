@@ -64,6 +64,7 @@ signals:
 
 private:
     void drawSchedule();
+    void addToSchedule(JobVertex* jv, FrameVertex* fv, QPen *pen);
     bool play=false;
     vector<double> frame_sizes;
     double frame;
