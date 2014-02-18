@@ -4,11 +4,11 @@
 #include <iostream>
 #include <stdio.h>
 
-INFAlgoithms::INFAlgoithms()
+INFAlgorithms::INFAlgorithms()
 {
 
 }
-vector<double> INFAlgoithms::detectFrameSizes(TaskSet* set){
+vector<double> INFAlgorithms::detectFrameSizes(TaskSet* set){
     double hyperperiod;
     vector<int> integerPeriods=vector<int>();
     for(int i=0; i<set->size(); i++){
@@ -18,7 +18,7 @@ vector<double> INFAlgoithms::detectFrameSizes(TaskSet* set){
     vector<double> toReturn;
     double min_f=0;
     for(int f=(int)100*hyperperiod; f>(int)100*min_f; f--){
-        if((100*((int)hyperperiod))%f==0){
+        if((100*((int)hyperperiod))%f==0 && f%100==0){
             bool third_constraint_satisfied=true;
             for(int j=0; third_constraint_satisfied && j<set->size(); j++){
                 third_constraint_satisfied=2*f-gcd_r(((int)set->at(j)->period)*100, f)<=100*((int)set->at(j)->deadline);
@@ -35,12 +35,12 @@ return toReturn;
  * @param periods the 100*periods of a TaskSet
  * @return the hyperperiod (double, it divides for 100)
  */
-double INFAlgoithms::findHyperperiod(vector<int> periods){
+double INFAlgorithms::findHyperperiod(vector<int> periods){
     double hyperperiod=(double)lcm(periods);
     return hyperperiod/100.;
 }
 
-double INFAlgoithms::findHyperperiod(TaskSet* set){
+double INFAlgorithms::findHyperperiod(TaskSet* set){
     vector<int> periods=*new vector<int>();
     for(int i=0; i<set->size(); i++){
         periods.push_back((int)set->at(i)->period*100);
@@ -51,7 +51,7 @@ double INFAlgoithms::findHyperperiod(TaskSet* set){
 /*
      * This uses the euclid's algortithm
      */
-int INFAlgoithms::gcd(vector<int> values){
+int INFAlgorithms::gcd(vector<int> values){
     if(values.size()<2){
         QDebug(new QString("not enough values"));
         throw new exception();
@@ -69,7 +69,7 @@ int INFAlgoithms::gcd(vector<int> values){
         return gcd(values);
     }
 }
-int INFAlgoithms::lcm(vector<int> values){
+int INFAlgorithms::lcm(vector<int> values){
     if(values.size()<2){
         QDebug(new QString("not enough values"));
         throw new exception();
@@ -84,7 +84,7 @@ int INFAlgoithms::lcm(vector<int> values){
 /*
  * Euclid's recursive algorithm
  */
-int INFAlgoithms::gcd_r(int a, int b){
+int INFAlgorithms::gcd_r(int a, int b){
     if(a==0){
         return b;
     }
@@ -95,6 +95,6 @@ int INFAlgoithms::gcd_r(int a, int b){
         return gcd_r(b, a%b);
     }
 }
-int INFAlgoithms::lcm(int a, int b){
+int INFAlgorithms::lcm(int a, int b){
     return a*b/gcd_r(a,b);
 }

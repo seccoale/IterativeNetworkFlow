@@ -4,10 +4,10 @@
 #include "Structs.h"
 
 using namespace inf;
-class INFAlgoithms
+class INFAlgorithms
 {
 public:
-    INFAlgoithms();
+    INFAlgorithms();
     static int gcd(vector<int> values);
     static int lcm(vector<int> values);
     static double findHyperperiod(vector<int> periods);
