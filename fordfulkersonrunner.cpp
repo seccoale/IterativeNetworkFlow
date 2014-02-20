@@ -24,16 +24,22 @@ void FordFulkersonRunner::suspend(){
 bool FordFulkersonRunner::isRunning(){
     return this->running;
 }
+void FordFulkersonRunner::setGraph(INFGraph *newGraph){
+    free(this->graph);
+    this->graph=newGraph;
+
+}
 
 void FordFulkersonRunner::step(){
     cout<<"STEP\n\n\n\n\n\n\n\n\n\n"<<endl;
-    emit repaint();
     if(runWhole){
         if(!this->view->fastPlay()){
+            emit repaint();
             sleep(TIME_TO_SLEEP);
         }
     }
     else {
+        emit repaint();
         sem_wait(this->semaphore);
     }
 }
@@ -182,6 +188,7 @@ void *FordFulkersonRunner::runAlgorithm(){
         cout<<"ENDED ALGORITHM"<<endl;
         this->running=false;
         level_labeling=0;
+        emit repaint();
         emit ended(flow);
     }
 }

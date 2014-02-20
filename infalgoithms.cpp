@@ -12,7 +12,9 @@ vector<double> INFAlgorithms::detectFrameSizes(TaskSet* set){
     double hyperperiod;
     vector<int> integerPeriods=vector<int>();
     for(int i=0; i<set->size(); i++){
-        integerPeriods.push_back(((int)set->at(i)->period*100));
+        double dp=(set->at(i)->period*100.);
+        cout<<"::::::::"<<dp<<endl;
+        integerPeriods.push_back((int)dp);
     }
     hyperperiod=findHyperperiod(integerPeriods);
     vector<double> toReturn;
@@ -36,14 +38,20 @@ return toReturn;
  * @return the hyperperiod (double, it divides for 100)
  */
 double INFAlgorithms::findHyperperiod(vector<int> periods){
+    cout<<"find hyperperiod"<<endl;
     double hyperperiod=(double)lcm(periods);
-    return hyperperiod/100.;
+    hyperperiod=hyperperiod/100.;
+    while(hyperperiod<1){
+        hyperperiod+=hyperperiod;
+    }
+    return hyperperiod;
 }
 
 double INFAlgorithms::findHyperperiod(TaskSet* set){
     vector<int> periods=*new vector<int>();
     for(int i=0; i<set->size(); i++){
-        periods.push_back((int)set->at(i)->period*100);
+        double dp=set->at(i)->period*100.;
+        periods.push_back((int)dp);
     }
     return findHyperperiod(periods);
 }
@@ -70,6 +78,11 @@ int INFAlgorithms::gcd(vector<int> values){
     }
 }
 int INFAlgorithms::lcm(vector<int> values){
+    cout<<"FIN QUA C'È"<<endl;
+    for(unsigned int i=0; i<values.size(); i++){
+        cout<<values.at(i)<<" | ";
+    }
+    cout<<"ENDED"<<endl;
     if(values.size()<2){
         QDebug(new QString("not enough values"));
         throw new exception();

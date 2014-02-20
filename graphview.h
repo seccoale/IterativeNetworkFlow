@@ -59,10 +59,16 @@ private slots:
 
     void on_saveGraphBTN_clicked();
 
+    void on_saveSchedBTN_clicked();
+
 signals:
     void sleepMSChanged(int ms);
 
 private:
+    void resizeSchedule();
+    void schedResize();
+    //void resizeEvent(QResizeEvent *event);
+    QPixmap schedToImage();
     void drawSchedule();
     void addToSchedule(JobVertex* jv, FrameVertex* fv, QPen *pen);
     bool play=false;
@@ -77,8 +83,10 @@ private:
     QGraphicsScene* schedScene;
     QGraphicsPixmapItem* currentPixmap;
     vector<QGraphicsItem*>* scheduleItems;
-    QStack<QGraphicsPixmapItem*>* history;
-    QStack<QGraphicsPixmapItem*>* forward;
+    QStack<QPixmap>* historyGraph;
+    QStack<QPixmap>* forwardGraph;
+    QStack<QPixmap*>* historySched;
+    QStack<QPixmap*>*forwardSched;
     void setNewImage(string loc);
     void replaceImg(string loc);
     void initGantt();
