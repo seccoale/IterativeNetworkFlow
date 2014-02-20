@@ -57,5 +57,6 @@ void TaskDeclarationWindow::editTask(QString* taskLiteral){
 
 void TaskDeclarationWindow::on_periodSB_valueChanged(double arg1)
 {
-    this->ui->deadlineSB->setMinimum(arg1);
+    this->ui->deadlineSB->setValue(arg1);
+    //this->ui->deadlineSB->setMinimum(arg1);
 }
