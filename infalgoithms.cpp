@@ -13,7 +13,6 @@ vector<double> INFAlgorithms::detectFrameSizes(TaskSet* set){
     vector<int> integerPeriods=vector<int>();
     for(int i=0; i<set->size(); i++){
         double dp=(set->at(i)->period*100.);
-        cout<<"::::::::"<<dp<<endl;
         integerPeriods.push_back((int)dp);
     }
     hyperperiod=findHyperperiod(integerPeriods);
@@ -23,7 +22,7 @@ vector<double> INFAlgorithms::detectFrameSizes(TaskSet* set){
         if((100*((int)hyperperiod))%f==0 && f%100==0){
             bool third_constraint_satisfied=true;
             for(int j=0; third_constraint_satisfied && j<set->size(); j++){
-                third_constraint_satisfied=2*f-gcd_r(((int)set->at(j)->period)*100, f)<=100*((int)set->at(j)->deadline);
+                third_constraint_satisfied=2*f-gcd_r((int)(set->at(j)->period*100), f)<=(int)(100*(set->at(j)->deadline));
             }
             if(third_constraint_satisfied){
                 toReturn.push_back((double)f/100.0);

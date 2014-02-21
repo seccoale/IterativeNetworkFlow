@@ -98,9 +98,11 @@ void GraphView::setNewImage(string loc){
 }
 
 void GraphView::replaceImg(string loc){
-    QGraphicsPixmapItem* prev_img=new QGraphicsPixmapItem(this->currentPixmap);
     this->currentScene->setSceneRect(-10000, -10000, 10000, 10000);
-    this->currentScene->removeItem(this->currentPixmap);
+    //QGraphicsPixmapItem* prev_img=new QGraphicsPixmapItem(this->currentPixmap);
+    if(this->currentPixmap!=NULL){
+        this->currentScene->removeItem(this->currentPixmap);
+    }
     QPixmap* new_img=new QPixmap(loc.c_str());
     this->currentPixmap=this->currentScene->addPixmap(*new_img);
     this->currentPixmap->update();
@@ -205,6 +207,8 @@ void GraphView::on_import_graph_button_clicked()
         this->schedScene->clear();
         this->currentScene->addText("Hyperperiod is not integer! Fail!");
         this->schedScene->addText("Hyperperiod is not integer! Fail!");
+        this->ui->graphicsView_graph->fitInView(0,0,200,200);
+        this->ui->graphicsView_schedule->fitInView(0,0,200,200);
         return;
     }
     this->frame_sizes=INFAlgorithms::detectFrameSizes(set);
