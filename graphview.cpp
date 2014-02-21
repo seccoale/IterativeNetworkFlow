@@ -76,7 +76,8 @@ GraphView::~GraphView()
 
 QPixmap GraphView::schedToImage(){
    //QPixmap pixmap=this->ui->graphicsView_schedule->grab(this->ui->graphicsView_schedule->contentsRect());
-     QPixmap pixmap=QPixmap::grabWidget(this->ui->graphicsView_schedule, this->ui->graphicsView_schedule->contentsRect());//this->schedScene);
+     QRect contentRect= this->ui->graphicsView_schedule->contentsRect();
+     QPixmap pixmap=QPixmap::grabWidget(this->ui->graphicsView_schedule, contentRect.left(), contentRect.top(), contentRect.width(), contentRect.height());//this->schedScene);
      //string resources_foder_with_spaces=RESOURCES_FOLDER;
      //QString* resources_folder=new QString(resources_foder_with_spaces.c_str());
      //*resources_folder=resources_folder->replace(*new QString(" "), *new QString("\\ "));
@@ -90,7 +91,8 @@ QPixmap GraphView::schedToImage(){
 void GraphView::setNewImage(string loc){
     QPixmap img(loc.c_str());
     this->currentPixmap=this->currentScene->addPixmap(img);
-    this->currentScene->addPixmap(img);
+    this->currentPixmap->setPos(-100, -100);
+    //this->currentScene->addPixmap(img);
     this->ui->graphicsView_graph->fitInView(this->currentPixmap, Qt::KeepAspectRatio);
     cout<<"history: "<<this->historyGraph->size()<<"; forward: "<<this->forwardGraph->size()<<endl;
     //ui->graphicsView_graph->setScene(this->currentScene);
@@ -98,11 +100,9 @@ void GraphView::setNewImage(string loc){
 }
 
 void GraphView::replaceImg(string loc){
+    QGraphicsPixmapItem* prev_img=new QGraphicsPixmapItem(this->currentPixmap);
     this->currentScene->setSceneRect(-10000, -10000, 10000, 10000);
-    //QGraphicsPixmapItem* prev_img=new QGraphicsPixmapItem(this->currentPixmap);
-    if(this->currentPixmap!=NULL){
-        this->currentScene->removeItem(this->currentPixmap);
-    }
+    this->currentScene->removeItem(this->currentPixmap);
     QPixmap* new_img=new QPixmap(loc.c_str());
     this->currentPixmap=this->currentScene->addPixmap(*new_img);
     this->currentPixmap->update();
@@ -201,20 +201,11 @@ void GraphView::on_import_graph_button_clicked()
     }
     this->tasks_inserted=this->set->size();
     this->ui->frameSizes->clear();
-    this->ui->hyperperiod->display(INFAlgorithms::findHyperperiod(set));
-    if(this->ui->hyperperiod->value()-(int)this->ui->hyperperiod->value()>0){
-        this->currentScene->clear();
-        this->schedScene->clear();
-        this->currentScene->addText("Hyperperiod is not integer! Fail!");
-        this->schedScene->addText("Hyperperiod is not integer! Fail!");
-        this->ui->graphicsView_graph->fitInView(0,0,200,200);
-        this->ui->graphicsView_schedule->fitInView(0,0,200,200);
-        return;
-    }
     this->frame_sizes=INFAlgorithms::detectFrameSizes(set);
     for(unsigned int i=0; i<frame_sizes.size(); i++){
         this->ui->frameSizes->addItem(QString::number(frame_sizes.at(i)));
     }
+    this->ui->hyperperiod->display(INFAlgorithms::findHyperperiod(set));
     this->frame=this->ui->frameSizes->currentText().toDouble();
     graph->importTaskSet(set, frame, INFAlgorithms::findHyperperiod(set));
     drawGraph(graph->toStringComplete());
@@ -638,7 +629,7 @@ void GraphView::initGantt(){
     //this->resizeSchedule();
     schedWidth=this->width()-200;
     schedStartY=-this->height()/3+50;
-    schedHeight=(this->height()-schedStartY)/(2*tasks_inserted);
+    schedHeight=(this->height()-schedStartY)/(3*tasks_inserted);
     if(schedHeight<20){//needs rolls
         schedHeight=20;
     }
