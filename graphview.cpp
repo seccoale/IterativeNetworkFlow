@@ -199,11 +199,18 @@ void GraphView::on_import_graph_button_clicked()
     }
     this->tasks_inserted=this->set->size();
     this->ui->frameSizes->clear();
+    this->ui->hyperperiod->display(INFAlgorithms::findHyperperiod(set));
+    if(this->ui->hyperperiod->value()-(int)this->ui->hyperperiod->value()>0){
+        this->currentScene->clear();
+        this->schedScene->clear();
+        this->currentScene->addText("Hyperperiod is not integer! Fail!");
+        this->schedScene->addText("Hyperperiod is not integer! Fail!");
+        return;
+    }
     this->frame_sizes=INFAlgorithms::detectFrameSizes(set);
     for(unsigned int i=0; i<frame_sizes.size(); i++){
         this->ui->frameSizes->addItem(QString::number(frame_sizes.at(i)));
     }
-    this->ui->hyperperiod->display(INFAlgorithms::findHyperperiod(set));
     this->frame=this->ui->frameSizes->currentText().toDouble();
     graph->importTaskSet(set, frame, INFAlgorithms::findHyperperiod(set));
     drawGraph(graph->toStringComplete());

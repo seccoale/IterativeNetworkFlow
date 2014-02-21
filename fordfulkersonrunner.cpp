@@ -187,7 +187,13 @@ void *FordFulkersonRunner::runAlgorithm(){
         //step();
         cout<<"ENDED ALGORITHM"<<endl;
         this->running=false;
-        level_labeling=0;
+        level_labeling=-1;
+        for(uint i=0; i<graph->vertexes.size(); i++){
+            graph->vertexes.at(i)->setLevelLabel(0);
+        }
+        for(uint i=0; i<graph->edges.size(); i++){
+            graph->edges.at(i)->setLevelLabel(0);
+        }
         emit repaint();
         emit ended(flow);
     }
